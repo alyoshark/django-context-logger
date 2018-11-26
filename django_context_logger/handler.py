@@ -11,8 +11,11 @@ class DjangoContextLogger(RotatingFileHandler):
         self.fields = fields
 
     def prepad_context(self, context):
-        # TODO: Nested fields
-        return '|'.join('%s:%s' % (f, context.getattr(f)) for f in self.fields)
+        if self.fields:
+            # TODO: Nested fields
+            return '|'.join('%s:%s' % (f, context.getattr(f)) for f in self.fields)
+        else:
+            return ''
 
     def emit(self, record):
         frame = _getframe()
@@ -20,6 +23,9 @@ class DjangoContextLogger(RotatingFileHandler):
         for i in range(self.frame_cnt):
             if self.context in frame.f_locals:
                 ctx = frame.f_locals[self.context]
-                emit(self.prepad_context(ctx) + '|' + record)
+                prepad = self.prepad_context(ctx)
+                if prepad:
+                    emit(prepad + '|' + record)
+                    return
             frame = frame.f_back
         emit(record)  # Just log as it is
